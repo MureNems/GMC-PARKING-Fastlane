@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GMC Parking — Fast Lane</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#C8A96E;--gold-light:#E2C99A;--gold-dark:#9A7A45;
+  --cream:#FAF6EF;--deep:#1A1508;--mid:#4A3B1A;--muted:#8A7A5A;
+  --white:#FFFFFF;--success:#3D8B6A;--danger:#8B3D3D;--warn:#8B6E3D;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:var(--cream);color:var(--deep);min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 10% 10%,rgba(200,169,110,.15) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 90% 90%,rgba(200,169,110,.10) 0%,transparent 60%);pointer-events:none;z-index:0}
+
+/* PIN */
+.pin-screen{position:fixed;inset:0;background:var(--deep);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;overflow-y:auto}
+.pin-screen.hidden{display:none}
+.pin-logo{width:80px;height:80px;border-radius:50%;border:3px solid var(--gold);object-fit:cover;margin-bottom:1.2rem}
+.pin-screen h1{font-family:"Cormorant Garamond",serif;color:var(--gold-light);font-size:1.7rem;text-align:center;margin-bottom:.3rem}
+.pin-screen p{color:var(--muted);font-size:.8rem;margin-bottom:2rem;letter-spacing:.06em;text-transform:uppercase}
+.pin-dots{display:flex;gap:1rem;margin-bottom:2rem}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(200,169,110,.4);background:transparent;transition:all .2s}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold)}
+.pin-dot.error{background:var(--danger);border-color:var(--danger)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;width:100%;max-width:280px}
+.pin-btn{padding:1.1rem;border:1.5px solid rgba(200,169,110,.2);border-radius:12px;background:rgba(255,255,255,.04);color:var(--cream);font-family:"Cormorant Garamond",serif;font-size:1.5rem;font-weight:600;cursor:pointer;transition:all .2s;text-align:center}
+.pin-btn:hover{background:rgba(200,169,110,.12);border-color:var(--gold)}
+.pin-btn:active{transform:scale(.94)}
+.pin-btn.del{font-family:"DM Sans",sans-serif;font-size:.9rem;color:var(--muted)}
+.pin-btn.empty{border:none;background:transparent;cursor:default}
+.pin-error{color:var(--danger);font-size:.75rem;letter-spacing:.06em;margin-top:.5rem;height:1rem;text-align:center}
+
+/* SETUP */
+.setup-screen{position:fixed;inset:0;background:var(--deep);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;overflow-y:auto}
+.setup-screen.hidden{display:none}
+.setup-logo{width:80px;height:80px;border-radius:50%;border:3px solid var(--gold);object-fit:cover;margin-bottom:1.2rem}
+.setup-screen h1{font-family:"Cormorant Garamond",serif;color:var(--gold-light);font-size:1.7rem;text-align:center;margin-bottom:.3rem}
+.setup-screen>p{color:var(--muted);font-size:.8rem;text-align:center;margin-bottom:1.5rem;max-width:340px;line-height:1.6}
+.setup-section{width:100%;max-width:400px;background:rgba(255,255,255,.05);border:1px solid rgba(200,169,110,.2);border-radius:12px;padding:1.2rem;margin-bottom:1rem}
+.setup-section h3{font-family:"Cormorant Garamond",serif;color:var(--gold-light);font-size:1rem;margin-bottom:1rem}
+.setup-field{display:flex;flex-direction:column;gap:6px;margin-bottom:.9rem}
+.setup-field:last-child{margin-bottom:0}
+.setup-field label{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.setup-field input{padding:.75rem .9rem;border:1.5px solid rgba(200,169,110,.3);border-radius:8px;background:rgba(255,255,255,.06);color:var(--cream);font-size:.85rem;font-family:"DM Sans",sans-serif;outline:none}
+.setup-field input:focus{border-color:var(--gold)}
+.setup-btn{width:100%;max-width:400px;padding:.9rem;background:var(--gold);color:var(--deep);border:none;border-radius:10px;font-family:"Cormorant Garamond",serif;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:.5rem}
+.setup-btn:hover{background:var(--gold-light)}
+
+/* HEADER */
+header{position:relative;z-index:10;background:var(--deep);padding:0 1.2rem;display:flex;align-items:center;justify-content:space-between;height:62px;box-shadow:0 2px 20px rgba(0,0,0,.4)}
+.header-brand{display:flex;align-items:center;gap:11px}
+.header-logo{width:40px;height:40px;border-radius:50%;border:2px solid var(--gold);object-fit:cover}
+.brand-text h1{font-family:"Cormorant Garamond",serif;font-size:1rem;font-weight:600;color:var(--gold-light);letter-spacing:.06em;line-height:1.1}
+.brand-text p{font-size:.58rem;color:var(--muted);letter-spacing:.13em;text-transform:uppercase}
+.header-right{display:flex;align-items:center;gap:8px}
+.mode-badge{font-size:.62rem;background:rgba(139,110,61,.2);color:var(--gold-light);border:1px solid rgba(200,169,110,.3);border-radius:20px;padding:3px 10px;letter-spacing:.06em;text-transform:uppercase}
+.attendant-badge{font-size:.65rem;color:var(--gold-light);background:rgba(200,169,110,.12);border:1px solid rgba(200,169,110,.25);border-radius:20px;padding:3px 10px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .4s}
+.sync-dot.live{background:var(--success);box-shadow:0 0 6px rgba(61,139,106,.8);animation:pdot 2s infinite}
+.sync-dot.error{background:var(--danger)}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.35}}
+.settings-btn{background:none;border:1px solid rgba(200,169,110,.25);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:.62rem;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .2s}
+.settings-btn:hover{border-color:var(--gold);color:var(--gold-light)}
+
+/* MAIN */
+main{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:1.4rem 1rem}
+
+/* TABS */
+.tabs{display:flex;background:var(--deep);border-radius:12px;padding:5px;margin-bottom:1.4rem;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.tab-btn{flex:1;padding:.6rem .4rem;border:none;background:transparent;color:var(--muted);font-family:"DM Sans",sans-serif;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border-radius:8px;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:5px}
+.tab-btn.active{background:var(--gold);color:var(--deep);font-weight:500;box-shadow:0 2px 10px rgba(200,169,110,.4)}
+.tab-btn:hover:not(.active){color:var(--gold-light)}
+
+/* PANELS */
+.panel{display:none;animation:fadeIn .3s ease}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* FORM CARD */
+.form-card{background:var(--white);border-radius:16px;padding:1.5rem;box-shadow:0 4px 24px rgba(26,21,8,.08);border:1px solid rgba(200,169,110,.2);margin-bottom:1.4rem}
+.form-card h2{font-family:"Cormorant Garamond",serif;font-size:1.35rem;font-weight:600;color:var(--deep);margin-bottom:.2rem}
+.form-card .subtitle{font-size:.76rem;color:var(--muted);margin-bottom:1.4rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+@media(max-width:580px){.form-grid{grid-template-columns:1fr}}
+.field-group{display:flex;flex-direction:column;gap:6px}
+.field-label{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
+
+/* CAMERA */
+.capture-box{position:relative;border:2px dashed rgba(200,169,110,.4);border-radius:12px;overflow:hidden;background:#F5F0E8;cursor:pointer;transition:all .2s;min-height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}
+.capture-box:hover{border-color:var(--gold);background:#EFE9DC}
+.capture-box.captured{border-style:solid;border-color:var(--gold)}
+.capture-box video,.capture-box img.preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px}
+.capture-icon{width:44px;height:44px;border-radius:50%;background:rgba(200,169,110,.15);display:flex;align-items:center;justify-content:center;font-size:1.25rem}
+.capture-label{font-size:.73rem;color:var(--muted);text-align:center;padding:0 .5rem;line-height:1.4}
+.capture-controls{position:absolute;bottom:7px;right:7px;display:flex;gap:5px;z-index:5}
+.cap-btn{padding:4px 10px;border:none;border-radius:6px;font-size:.68rem;cursor:pointer;font-family:"DM Sans",sans-serif;font-weight:500;transition:all .2s}
+.cap-btn-primary{background:var(--gold);color:var(--deep)}
+.cap-btn-secondary{background:rgba(0,0,0,.55);color:white}
+.cap-btn:hover{opacity:.85}
+input[type=file]{display:none}
+.submit-btn{width:100%;padding:.88rem;background:var(--deep);color:var(--gold-light);border:none;border-radius:10px;font-family:"Cormorant Garamond",serif;font-size:1.05rem;font-weight:600;letter-spacing:.06em;cursor:pointer;margin-top:1.3rem;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:10px}
+.submit-btn:hover{background:var(--mid);box-shadow:0 4px 16px rgba(26,21,8,.25)}
+
+/* STATS */
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:.85rem;margin-bottom:1.3rem}
+@media(max-width:580px){.stats-strip{grid-template-columns:1fr 1fr}}
+.stat-card{background:var(--white);border-radius:12px;padding:1rem;border:1px solid rgba(200,169,110,.15);text-align:center}
+.stat-num{font-family:"Cormorant Garamond",serif;font-size:1.85rem;font-weight:700;color:var(--gold-dark);line-height:1}
+.stat-lbl{font-size:.62rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
+
+/* REGISTRY */
+.registry-card{background:var(--white);border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,21,8,.08);border:1px solid rgba(200,169,110,.2)}
+.registry-header{background:var(--deep);padding:1rem 1.4rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+.registry-header h2{font-family:"Cormorant Garamond",serif;font-size:1.1rem;color:var(--gold-light);font-weight:600}
+.reg-right{display:flex;align-items:center;gap:.5rem}
+.count-badge{background:var(--gold);color:var(--deep);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:20px}
+.live-badge{background:rgba(61,139,106,.2);color:var(--success);border:1px solid rgba(61,139,106,.3);font-size:.65rem;padding:3px 9px;border-radius:20px;display:flex;align-items:center;gap:5px}
+.registry-table{width:100%;border-collapse:collapse}
+.registry-table th{background:var(--cream);padding:.7rem .9rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;border-bottom:1px solid rgba(200,169,110,.15)}
+.registry-table td{padding:.75rem .9rem;font-size:.78rem;border-bottom:1px solid rgba(200,169,110,.08);vertical-align:middle}
+.registry-table tr:last-child td{border-bottom:none}
+.registry-table tr:hover td{background:rgba(200,169,110,.04)}
+.thumb-pair{display:flex;gap:4px}
+.thumb{width:34px;height:34px;border-radius:6px;object-fit:cover;border:1.5px solid rgba(200,169,110,.3);cursor:pointer;transition:transform .2s}
+.thumb:hover{transform:scale(1.12)}
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.66rem;font-weight:500}
+.status-in{background:rgba(61,139,106,.12);color:var(--success)}
+.status-out{background:rgba(139,61,61,.12);color:var(--danger)}
+.action-btn{padding:4px 11px;border-radius:6px;border:none;font-size:.68rem;font-family:"DM Sans",sans-serif;font-weight:500;cursor:pointer;transition:all .2s}
+.btn-checkout{background:var(--gold);color:var(--deep)}
+.btn-checkout:hover{background:var(--gold-dark);color:white}
+.btn-done{background:rgba(61,139,106,.15);color:var(--success);cursor:default}
+.gate-tag{font-size:.62rem;color:var(--muted);font-style:italic}
+
+/* TOAST */
+.toast-container{position:fixed;top:70px;right:12px;z-index:1000;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--deep);border-left:4px solid var(--gold);color:var(--cream);padding:.75rem 1rem;border-radius:10px;font-size:.78rem;max-width:270px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideIn .3s ease,fadeOut .4s 3.5s forwards}
+.toast.success{border-color:var(--success)}.toast.error{border-color:var(--danger)}.toast.warn{border-color:var(--warn)}
+@keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{to{opacity:0;transform:translateX(110%)}}
+
+/* VERIFY MODAL — fast lane */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,21,8,.85);z-index:500;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);border-radius:20px 20px 0 0;padding:1.6rem 1.6rem 2rem;width:100%;max-width:500px;box-shadow:0 -10px 40px rgba(0,0,0,.3);animation:slideUp .35s cubic-bezier(.34,1.2,.64,1)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-title{font-family:"Cormorant Garamond",serif;font-size:1.2rem;color:var(--deep);margin-bottom:.2rem}
+.modal-subtitle{font-size:.74rem;color:var(--muted);margin-bottom:1.1rem}
+
+/* DRIVER COMPARE — the key UI */
+.driver-compare{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1rem}
+.driver-box{border-radius:14px;overflow:hidden;position:relative}
+.driver-box img{width:100%;aspect-ratio:.85;object-fit:cover;display:block}
+.driver-box-label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:.5rem .7rem;font-size:.65rem;color:white;letter-spacing:.07em;text-transform:uppercase;font-weight:500}
+.driver-box-label span{display:block;font-size:.58rem;opacity:.7;margin-top:1px}
+.driver-box.entry{border:2px solid rgba(200,169,110,.4)}
+.driver-box.exit{border:2px solid rgba(61,139,106,.5)}
+
+/* AI STATUS */
+.ai-status{padding:.75rem 1rem;border-radius:10px;margin-bottom:1rem;font-size:.8rem;line-height:1.5;display:flex;align-items:center;gap:.7rem}
+.ai-status.searching{background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.25);color:var(--warn)}
+.ai-status.found{background:rgba(61,139,106,.1);border:1px solid rgba(61,139,106,.3);color:var(--success)}
+.ai-status.multiple{background:rgba(139,110,61,.1);border:1px solid rgba(139,110,61,.25);color:var(--warn)}
+.ai-status.notfound{background:rgba(139,61,61,.1);border:1px solid rgba(139,61,61,.3);color:var(--danger)}
+.spinner{width:16px;height:16px;border:2px solid rgba(200,169,110,.3);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MATCH SELECTOR (when multiple) */
+.match-list{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem;max-height:180px;overflow-y:auto}
+.match-item{display:flex;align-items:center;gap:.7rem;padding:.6rem .8rem;border-radius:8px;border:1.5px solid rgba(200,169,110,.2);cursor:pointer;transition:all .2s;background:var(--cream)}
+.match-item:hover,.match-item.selected{border-color:var(--gold);background:rgba(200,169,110,.1)}
+.match-item img{width:38px;height:38px;border-radius:6px;object-fit:cover;flex-shrink:0}
+.match-item img.round{border-radius:50%}
+.match-info{flex:1;min-width:0}
+.match-gate{font-size:.72rem;color:var(--deep);font-weight:500}
+.match-time{font-size:.63rem;color:var(--muted)}
+.match-conf{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:12px}
+.match-conf.high{background:rgba(61,139,106,.15);color:var(--success)}
+.match-conf.medium{background:rgba(200,169,110,.2);color:var(--warn)}
+.match-conf.low{background:rgba(139,61,61,.12);color:var(--danger)}
+
+/* DECISION BUTTONS */
+.decision-btns{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.decision-btn{padding:.9rem;border:none;border-radius:12px;cursor:pointer;font-family:"DM Sans",sans-serif;font-size:.88rem;font-weight:600;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem;letter-spacing:.02em}
+.btn-approve{background:var(--success);color:white;font-size:1rem}
+.btn-deny{background:var(--danger);color:white;font-size:1rem}
+.btn-approve:hover{opacity:.88;transform:scale(.98)}
+.btn-deny:hover{opacity:.88;transform:scale(.98)}
+.btn-cancel{background:var(--cream);color:var(--mid);grid-column:span 2;padding:.6rem;font-size:.76rem;border:1px solid rgba(200,169,110,.2);border-radius:8px;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .2s;margin-top:.3rem}
+.btn-cancel:hover{background:#EFE9DC}
+
+/* INSTRUCTION BANNER */
+.instruction{background:rgba(200,169,110,.08);border:1px solid rgba(200,169,110,.2);border-radius:10px;padding:.7rem 1rem;font-size:.72rem;color:var(--muted);text-align:center;margin-bottom:1rem;line-height:1.5}
+.instruction strong{color:var(--deep)}
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:900;display:none;align-items:center;justify-content:center}
+.lightbox.open{display:flex}
+.lightbox img{max-width:90vw;max-height:85vh;border-radius:10px}
+.lightbox-close{position:absolute;top:14px;right:16px;background:none;border:none;color:white;font-size:1.7rem;cursor:pointer}
+
+/* SEARCH */
+.search-row{display:flex;gap:7px;margin-bottom:.9rem;align-items:center}
+.search-input{flex:1;padding:.58rem .88rem;border:1.5px solid rgba(200,169,110,.3);border-radius:8px;font-size:.82rem;background:var(--white);color:var(--deep);outline:none;font-family:"DM Sans",sans-serif}
+.search-input:focus{border-color:var(--gold)}
+.reset-btn{padding:.58rem .9rem;background:rgba(139,61,61,.1);color:var(--danger);border:1px solid rgba(139,61,61,.2);border-radius:8px;font-size:.7rem;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .2s;white-space:nowrap}
+.reset-btn:hover{background:rgba(139,61,61,.2)}
+.empty-state{text-align:center;padding:2.5rem;color:var(--muted)}
+.empty-state .icon{font-size:1.8rem;margin-bottom:.6rem}
+.empty-state p{font-size:.8rem}
+.privacy-banner{background:rgba(200,169,110,.08);border:1px solid rgba(200,169,110,.2);border-radius:10px;padding:.7rem 1rem;font-size:.7rem;color:var(--muted);display:flex;align-items:flex-start;gap:8px;margin-bottom:1.3rem;line-height:1.5}
+</style>
+</head>
+<body>
+
+<!-- PIN -->
+<div class="pin-screen" id="pinScreen">
+  <img class="pin-logo" src="data:image/jpeg;base64,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" alt="GMC">
+  <h1>Grace Mission Church</h1>
+  <p>Fast Lane · Parking Gate</p>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" onclick="pinPress('2')">2</button>
+    <button class="pin-btn" onclick="pinPress('3')">3</button>
+    <button class="pin-btn" onclick="pinPress('4')">4</button>
+    <button class="pin-btn" onclick="pinPress('5')">5</button>
+    <button class="pin-btn" onclick="pinPress('6')">6</button>
+    <button class="pin-btn" onclick="pinPress('7')">7</button>
+    <button class="pin-btn" onclick="pinPress('8')">8</button>
+    <button class="pin-btn" onclick="pinPress('9')">9</button>
+    <button class="pin-btn empty"></button>
+    <button class="pin-btn" onclick="pinPress('0')">0</button>
+    <button class="pin-btn del" onclick="pinDelete()">⌫</button>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+</div>
+
+<!-- SETUP -->
+<div class="setup-screen" id="setupScreen">
+  <img class="setup-logo" src="data:image/jpeg;base64,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" alt="GMC">
+  <h1>Grace Mission Church</h1>
+  <p>Fast Lane — enter your gate name to get started.</p>
+  <div class="setup-section">
+    <h3>👤 Your Gate</h3>
+    <div class="setup-field">
+      <label>Your Name / Gate Label</label>
+      <input type="text" id="attendantInput" placeholder="e.g. Gate 1 — Masakona">
+    </div>
+  </div>
+  <button class="setup-btn" onclick="saveSetup()">✦ Activate Gate</button>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-brand">
+    <img class="header-logo" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxASDw8QEA0PFRUWDw0QFw8PFw8VDw4VFhEWFhYRFRUYHCghGBolGxUVITEhJSkrLi4uFx8zODMtNygtLisBCgoKDg0OGBAQGismHyUtLS0tLTAtKy0tLystLS8uLS0tLS0tLS0tLSs1LS0tLS0tKy0tKy0tLS0tLS0tLS0tLf/AABEIAOEA4QMBIgACEQEDEQH/xAAbAAEAAgMBAQAAAAAAAAAAAAACBAUAAwYBB//EAEIQAAIBAgIFBwgHCAMBAQAAAAABAgMRBCEFEjFBUWFxgZGxwdEGEyIyM1Kh8CNCU2JysuEUFXOCkqLC0iRD8WM1/8QAGQEBAQADAQAAAAAAAAAAAAAAAgEAAwUE/8QALREBAQACAQMDAQcEAwAAAAAAAAECEQMSITEiQVHwE2FxgbHB0QQyoeEzUpH/2gAMAwEAAhEDEQA/APqjCxMLPO2CwsTCwqLAxsDBVFhYmFkpAwsTCw1RYWJhYasBhYmFhqiwMbAwVRYWJhZCFhYmFhqgFiYWGqLAxsDCUFhYmFhUWFiYWGq8MMMIx3rCxMLO254sLEwsKiwMbAw1RYWJhYaQMLEwsNUWFiZ5GLeSTfIrsKxrYWTI6PrPZSl02Xae/umv9n/dDxM6MvhnVEBgZPlouv8AZPocfEi1sNOPrU5rladusGWNnmFLGhhYmFgIWFiYWGqAWILDVFgY2BhKCwsTCwqLCxMLDVeGGGEY71hYmFnbc8WFiYWFRYGNgYaosLEzKdNyaUVdhJqZJw+j5zzfox96XciVqU6OcvTn7u6JBxWLnP1nl7q2fqWyTym7fCS/2enxqP8At8O011NLz2QjCK4JX/T4EFhYbnfbsUxnu3VMfVe2rLoy7DS8TU+0n/VLxAws13K/JajasZVWyrP+qRup6Zrx+spfiS7rEJgYevKeKzpi1/eFCp7agk/fht7n2gq6IU05Yeqpr3XZSXT42KtmQqSi9aMmnxWTL17/ALozp14GrTlFuMotNbnkzWy7paSp1UqeJiuSqsmue2zoy5CFpLRkqXpJ60HsmuXZfxDlh23j3izL2quCx2AzTWwWBjYGEoLCxMLCosLEwsNV4YYYRjvWFiYWdtzxYWJhYVFgY2G18l1BqspUnJqMVn2crJlatGitSnnL60+AqklRhqr15LN+6isZb6fxZO4yd3d9YGJhZqpiwsTCw1YDCxMLDVFgY2BgqiwsTCyELJ2jNJOn6ElrU3k4vO19rXgQWFmTK43cZZL5XjprDzVeklOjJWdrNwTexPn8GQ9M6PjFKtSzpyzy+o3u5uzYeaI0j5tuE86cspJ7I3y1ubiT6aVCo6M/SoVb6reyN9zfV8GbvTnj936X+KHfG/Xf/bmWFk3SmCdGo4O9tsXxj47iEzyZSy6rdLubFhYmFgIWFiYWGq8MMMIx3rCxMLO254sLEwsKiyXgoKMZVZbskuL+ciLGDbSW1tIk6Smlq01sil1/PaZO3dl+EKrNybk9rdzWxMLNdOAwsTCw1XhNnhac4vzLbldPUlttZ3tx3EFnik0002mt62oksnlmhnFp2aafB5MMIOTtFNvgs2W+Grxr2p1Y+lZtTjk/n4ErA6N83Ny1rrVaV1ZrNdYpxdXjwlz15c3Ui02mmmtz2o8hTlJ2jFt8FmzosborzlRzc7K0VZLN27CFjcYqLdGjFRtbWntk3bcHLi6e+XhZnvw1SwtGnCKrN+ctL0Iu9r7NaxUMc22227vbd7WBmrKy+I2YzQsLEws10gZdaNmq9GWGm/SitanJ8m7o7HyFKx4eu4TjOO2LT5+K6VkXDLpvfx7plNxcSi8RhZRkvpaLa+80tq6UuuJzrOprVVTxNHER9nWioy5G7Zv+19DKTTeF81XnFLJ+nHme7od10D5se2/jt/FTjvsr2FiYWeVuFhYmFhqvDDDCMd6wsTCztueLCxMLCqTo6K1nN7Ixb+ei5DqTu23vbZNj6NCT96VvnqZDpUnKSit/w5TMvEjJ8tcYNuyTb4IlQ0ZUe3VXO8/gWuHw8YKyXO97BWxtOLs5Z8FmxfZyT1J1X2Vs9Ez3Si+tdxBr0JQdpRa7HzMvaekaTdta34lZdZIq01KLUkmmS8eN/tXqs8uUYqNCU3qxV38FzskYzBOE1G+T2SlZLpfIWuD81TjqqrBva3rRzfXsNWPHu6p3LU7KtaLrpppK6zupK6Jek8ZNU9RwmpatNua9WLum1ddRYftVP7Wn/VHxIel8RB0ZpVIN+hkmm/WRsuMxxuqG7bNteExdSVJwjTnrKnlOWyTuldN89+grJaJxDzcOlyhn8S7wGJpqlTTqQT1Fk5Rujf8AtlL7Wn/VHxMvHjlJ1Veqy9o4+vSlCTjJWa2o1M6jSlOjVj7akpLZLWj1PPYUujNHurUcX6sfWafLsTXE82fFZlqNuOfbdacHo+pV9SOWzWllFePQWMfJt76y6It95fpRjG2UYpcyikVWI8oKSdoxlLlVlH45/A3fZceE9YdeWXhAreTlRL0akZcjTi32lNiKE4S1ZxcXwfauJ1uC0zSqNRzjJ7FK1m+CZIx+BhWhqyXNLfF8V4By4MM5vCrOSy+pz+D+lwVWnvpvXjzZv/ddIdNfSYbD199vNyfL/wCxfWLQMXTxUqU1tjODW5tekn1J9Z7h6d8Ji6L/AOucpLks7/4S6zXO+Gr8WfnO8Lxfr3c8wsTCzxPQLCxMLDVeGGGEY71hYmFnbc8WFiYWFUnFZUaS5389Zu0TTylLi7dC+fgaMb6lH8D7ETtHL6KP835mOT1DfDXpOu4wstssr8Fv+eUpGWOmX6cV92/W34FczXyXdPGdgZ75yXvS62eMnYfRevCMvOWvutffzmuS3wVsnlXzm3tbfO2yy0PhoShJygn6Vs+ZGvF6LcISn5y9rZWte7S48pJ0F6k/x9yHhjZnqpldzslfsFL7KPUaMfgaapVHGnFNRbTW1WzJtadoyfBN9R7VheMo8U11qxvuMs1prlqHh9HUtSF6UW9WN29rdszZ+7qP2MOokt2V9yR5Td0nxSfwM6Mfhm65/wAoMNCCp6kFG7ne2/YT9AUdWinvk3LuXZ8SN5T7KXPPuLLRvsaX8OHYaccZ9rTt9EVXlNimlGkntWvLlV8l1pvoRzzLTyif/If4YdhVs8vNd51u45rGCJ4mp9pP+qXiALNG2xK0XVaxNGTbb85GN3m8/R7y7wsf+TjqfvQv1xz/ADnP4H21H+LS/OjosN/+jX/grspno4fE/H9ZWvk/ZyIWILPG3iwsTCw1XhhhhGO9YWJhZ23PFhYmFhVJxnsqL5GvgvAl6MlemuRyXxv3kWpnh192Xe/FB0bX1Zar2S+DHLrJPYtMwzhLnj3rvKxnR4iipxcX18HxKTEYOcX6ra4xzX6B5cbva4VEZcaLxcWo07O6Td8rbf1KuFCb2Qk+hlro3AOD15PO1tVbucPHLvsuWtNulfYz/l/MiNoL2cvx/wCKJOlfYz/l/MiPoL2cvx/4o2X/AJJ+Az+1Lx3sqv8ADqflZsozvGMuMYvrVwY32VX+HU/KzXoud6NP8Nup27hb9Wk9i0hO1Gq/uS7LG2l6sfwx7CFpydqEuVxXxv3E2l6sfwx7DJfVWeym8p9lLnn2InaGqa1CnyLV6nYg+U/q0uefYiP5PYxRk6UnlJ3XJLh09xo6unmu2zW8B8p6LVSM90o26U/BopWdxjcJGrBwlzprbF8UcziNB14v0YqS4xaXwbNXPxZdW5D485rVVQWXWD0BUk71PQjwunN81skTp+TtBJtzqJJNttwslx9U1T+nzs3o7yYxz2jY3r0V/wDWn8JJnQYZ/wDNxc/dpJX/AJYf6lZoWlGWMjqa2pFzknK2s0o2TfS0S8NV+j0hW96U4J9aX5oi4pqT8b/iDn3v5fu5kLEws8b0CwsTCw1XhhhhGO9YWJhZ23PFhYmFhVLwPpRqU+Kuuf5sV7JGGq6s4y5c+ZnukKWrN8H6S7/iZe8ZPLdhNJWyqX/Fv6SwhXjL1ZxfM1c55hZk5bGXCV0k6kVtklztIh1NJ01JRWeaTlsjHl5SkYWS819lmEXeksTTdKaVSLfo5Jq79JEbQmIir03k27p7nls58irYQXlvVMimHbTodK4mMKck9soyilzq1+YjaBxK1XTe1NyXKt5T1qspPWk23xYITcWpJ2ad01uMvN6ts6O2lr5Q4lO1JbU9Z8mTsviWej8VGpBOO5JNb4uxyk5Nttu7d22957Rryg24SaunF23ok59ZW1l4+2lh5RYuMpRhHPVcrvdd2y+BTMTCzRnl1XdbcZqaXOA084pRqpv769bpW/nLSGlKDzVaP8149pyDCzZj/UZY9hvHK6+tpehH/tT5IXk31ZHP6W0xKr6EVqw4fWnz+BWsJr5OfLKaXHjkXGgvo6WIxD3R1I8+23W4HmL+jwFKG+pLXfN61/yEnF4e0MNg1tk1Odty2vv/AKUQPKbEKVbUj6tOKgluvtfcugeXow192vzvepPVkp2FiYWeJ6BYWJhYarwwwwjHesLEws7bniwsTCwqLJiXnaVvrQ2cq+ewhsWHrOElJdK4rgSXTK0MLJ2PoLKpD1ZZ5bmQWHKaKUGFiYWCkLCxMLDVgMLEwsNUWBjYGCqLCxMLIQsLEwMNUSz0DhU5utPKFP0rvY5JXXVt6iFhcPKpNQis31Jb2+Qu69JScMFRvqxtKrNc92ue/wAbLcbOLHv1fWxzvs8wte0a+Nms5XhTi+GxLrS6mczUk2227tttvi3tZbafxqlKNKn7On6KtsbWV+ZbOviVDBzZbup7fr7lxztsWFiYWaGwWFiYWGq8MMMIx3rCxMLO254sLEwsKiw/N+AmBhqrFLzWTetTktvBtEPG4Rwd1nF7JdzNmExaScJ5wf8Ab+hvd6S9+k+nVuPtZ9dk8VUMLLDE4HLXpPWjwW1ePaV7NOUsOXYsLEwsFKAwsTCw1RYGNgYKosLEwshCz2jSlOSjFNt7EiTgsBUqu0Vlvm/VXi+QtISjS+hwq16rylVdrR5b93ax48e+98fXgblrwKj+zxVGl6VedryX1F3L/wBZqxtaOGpOjTlepLOdTer8vHh17zZXrQwsZKMtevL1pvPVv87N+85+pNtttttu7b2ti5M+ntPP6f7THHff6rUwsbAzyN8FhYmFhUWFiYWGq8MMMIx3rCxMLO254sLEwsKiwMbAw1RZvwuMlDLbHfF9xoYWTdnhdbWcKd/Tw87PfTezq3AqypTdqsXTn7259Pj1ldGbTum0+K2kyGkU1q1oKS4q1188lhTKX67JqtVfRlRZxtNcY7erwIM4tZNNPg8mW9KlF50MQ4v3JbOp/qbZyxCynRp1FyW7H4EvHL9bWZOfYWXE6lH6+EnH8Ka8DU6uD+yq9b/2NVw++FMvuVTAy4jUwv1cPVk+W/8Asb6daf8A1YFR+9Oy7l2k+z37/rV6vuVGH0fVn6tN296WUet7SZ+wUKOdeprS+yh8367EytSrtXrYmNOPCGT5r/qyJ+2Yaj7Km5y9+ey/G77khdGOPn/P8J1W/X7pFq1WNrKhRS5FJruXUuch4jSVOlF08NG3Gq9r5Vx5+og43H1Kvryy91ZRXR4kRgz5f+v/AL9eCmHyMnd3b5bvawMTCzzVtFgY2BhKCwsTCwqLCxMLDVeGGGEY71hYmFnbc8WFiYWFRYGNgYKosLEwslIGFiYWGqLHDFVI+rUkuS+XUBhYd6VMjpesvrJ86XcL991fdp9UvErmFl+0y+WdM+E+Wm633FzLxZHq6TrS21Zfy2j2EZgYMuTK+6zGfDycm3dtt8XmwMTCzWcFhYmFhqgwsQWGqLAxsDCUFhYmFhUWFiYWGq8MMMIx3rCxMLO254sLEwsKiwMbAwVRYWJhZKQMLEwsNUWFiYWGrAYWJhYaosDGwMFUWFiYWQhYWJhYaoBYgsNUGFjYGEoLCxMLCosLEwsNV4YYYRjvWFnph23PBhZ4YFXjAzDA1RYWeGBpCwswwNUWFmGBqwGFmGBqiwM9MBVBhZhhCFhZhgaoMLMMDVALMMCUFhZhgaosLMMCrwwwwjH/2Q==" alt="GMC">
+    <div class="brand-text">
+      <h1>Grace Mission Church</h1>
+      <p>Parking Gate System</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="mode-badge">⚡ Fast Lane</span>
+    <span class="attendant-badge" id="attendantBadge">—</span>
+    <div class="sync-dot" id="syncDot"></div>
+    <button class="settings-btn" onclick="showSetup()">⚙</button>
+  </div>
+</header>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close">✕</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- VERIFY MODAL — bottom sheet -->
+<div class="modal-overlay" id="verifyModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">👁 Compare Drivers</div>
+    <div class="modal-subtitle" id="modalSub">Check if the person exiting matches the entry record.</div>
+
+    <!-- Searching state -->
+    <div id="stateSearching">
+      <div class="ai-status searching">
+        <div class="spinner"></div>
+        <span>Searching entry records for this vehicle…</span>
+      </div>
+    </div>
+
+    <!-- Result state -->
+    <div id="stateResult" style="display:none">
+      <div class="ai-status" id="aiStatus"></div>
+
+      <!-- THE KEY ELEMENT — side by side driver comparison -->
+      <div class="driver-compare" id="driverCompare"></div>
+
+      <!-- Multiple matches selector -->
+      <div id="matchSelector" style="display:none">
+        <div style="font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;font-weight:500">Select the correct entry record</div>
+        <div class="match-list" id="matchList"></div>
+      </div>
+
+      <div class="instruction">
+        <strong>Look at both photos.</strong> Is the person on the right the same as the person on the left?
+      </div>
+
+      <div class="decision-btns">
+        <button class="decision-btn btn-approve" onclick="handleApprove()">✓ Approve Exit</button>
+        <button class="decision-btn btn-deny" onclick="denyCheckout()">✕ Different Person</button>
+        <button class="btn-cancel" onclick="closeModal()">↩ Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="privacy-banner">
+    <span>⚡</span>
+    <span><strong>Fast Lane mode</strong> — no codes, no typing. Two photos in, one photo out. Entry driver shown instantly for visual comparison on exit.</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('checkin',this)">🚗 Check-In</button>
+    <button class="tab-btn" onclick="switchTab('checkout',this)">🔓 Check-Out</button>
+    <button class="tab-btn" onclick="switchTab('registry',this)">📋 Registry</button>
+  </div>
+
+  <!-- CHECK-IN -->
+  <div class="panel active" id="panel-checkin">
+    <div class="stats-strip">
+      <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-lbl">Today Total</div></div>
+      <div class="stat-card"><div class="stat-num" id="statInside">0</div><div class="stat-lbl">Inside Now</div></div>
+      <div class="stat-card"><div class="stat-num" id="statOut">0</div><div class="stat-lbl">Exited</div></div>
+      <div class="stat-card"><div class="stat-num" id="statGates">0</div><div class="stat-lbl">Active Gates</div></div>
+    </div>
+    <div class="form-card">
+      <h2>Register Arriving Vehicle</h2>
+      <p class="subtitle">📌 <strong>Important:</strong> Vehicle photo must show the <strong>front of the car with the number plate clearly visible</strong>. Side-on shots will not capture the plate and matching will fail.</p>
+      <div class="form-grid">
+        <div class="field-group">
+          <label class="field-label">🚗 Vehicle Front Photo — Must show number plate</label>
+          <div class="capture-box" id="carBox" onclick="handleCaptureTap('car')">
+            <div class="capture-icon">🚗</div>
+            <div class="capture-label">Tap to capture<br><strong style="color:var(--gold-dark)">FRONT of vehicle</strong><br><span style="font-size:.65rem">Plate must be visible</span></div>
+            <div class="capture-controls" id="carControls" style="display:none">
+              <button class="cap-btn cap-btn-primary" onclick="event.stopPropagation();snapPhoto('car')">📸 Snap</button>
+              <button class="cap-btn cap-btn-secondary" onclick="event.stopPropagation();retake('car')">↩ Retake</button>
+            </div>
+          </div>
+          <input type="file" id="carFile" accept="image/*" capture="environment" onchange="handleFileUpload('car',this)">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Driver Photo</label>
+          <div class="capture-box" id="driverBox" onclick="handleCaptureTap('driver')">
+            <div class="capture-icon">👤</div>
+            <div class="capture-label">Tap to capture<br>driver face</div>
+            <div class="capture-controls" id="driverControls" style="display:none">
+              <button class="cap-btn cap-btn-primary" onclick="event.stopPropagation();snapPhoto('driver')">📸 Snap</button>
+              <button class="cap-btn cap-btn-secondary" onclick="event.stopPropagation();retake('driver')">↩ Retake</button>
+            </div>
+          </div>
+          <input type="file" id="driverFile" accept="image/*" capture="user" onchange="handleFileUpload('driver',this)">
+        </div>
+      </div>
+      <button class="submit-btn" onclick="doCheckin()">✦ Register Entry</button>
+    </div>
+  </div>
+
+  <!-- CHECK-OUT -->
+  <div class="panel" id="panel-checkout">
+    <div class="form-card">
+      <h2>Process Vehicle Exit</h2>
+      <p class="subtitle">Capture the front of the exiting vehicle. Entry driver photo appears instantly for comparison.</p>
+      <div class="form-grid">
+        <div class="field-group">
+          <label class="field-label">Exit Vehicle Photo</label>
+          <div class="capture-box" id="coCarBox" onclick="handleCaptureTap('coCar')">
+            <div class="capture-icon">🚗</div>
+            <div class="capture-label">Tap to capture<br>front of vehicle</div>
+            <div class="capture-controls" id="coCarControls" style="display:none">
+              <button class="cap-btn cap-btn-primary" onclick="event.stopPropagation();snapPhoto('coCar')">📸 Snap</button>
+              <button class="cap-btn cap-btn-secondary" onclick="event.stopPropagation();retake('coCar')">↩ Retake</button>
+            </div>
+          </div>
+          <input type="file" id="coCarFile" accept="image/*" capture="environment" onchange="handleFileUpload('coCar',this)">
+        </div>
+        <div class="field-group" style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:.8rem;background:rgba(200,169,110,.05);border:1.5px dashed rgba(200,169,110,.25);border-radius:12px;padding:1.2rem;text-align:center">
+          <div style="font-size:2rem">👁</div>
+          <div style="font-size:.78rem;color:var(--muted);line-height:1.5">Entry driver photo will appear here automatically after vehicle is matched</div>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="initiateCheckout()">🔍 Find Match &amp; Compare</button>
+    </div>
+  </div>
+
+  <!-- REGISTRY -->
+  <div class="panel" id="panel-registry">
+    <div class="search-row">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search by plate or gate…" oninput="renderRegistry()">
+      <button class="reset-btn" onclick="clearAllData()">🗑 Clear</button>
+    </div>
+    <div class="registry-card">
+      <div class="registry-header">
+        <h2>Live Registry</h2>
+        <div class="reg-right">
+          <button onclick="rescanPlates()" style="background:rgba(200,169,110,.15);border:1px solid rgba(200,169,110,.3);color:var(--gold);border-radius:6px;padding:3px 10px;font-size:.65rem;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.05em">🔍 Scan Plates</button>
+          <span class="live-badge"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></span>LIVE</span>
+          <span class="count-badge" id="regCount">0 vehicles</span>
+        </div>
+      </div>
+      <div id="registryBody"></div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, set, onValue, update, remove }
+                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const FIREBASE_CFG = {
+  apiKey: "AIzaSyCBDnEIi8zc_XFUluS9WbCoLX7daBMKV9M",
+  authDomain: "gmc-parking-14a20.firebaseapp.com",
+  databaseURL: "https://gmc-parking-14a20-default-rtdb.firebaseio.com",
+  projectId: "gmc-parking-14a20",
+  storageBucket: "gmc-parking-14a20.firebasestorage.app",
+  messagingSenderId: "551223582953",
+  appId: "1:551223582953:web:7a508def2c3f85c1b59078"
+};
+const PROXY_URL   = "https://gmc-proxy.nemamur.workers.dev";
+const PROXY_TOKEN = "Masakona2026";
+const CORRECT_PIN = "7429";
+const ATTENDANT_KEY = "gmc_attendant_name";
+const PIN_SESSION   = "gmc_pin_unlocked";
+const TODAY = new Date().toISOString().slice(0,10);
+
+let db=null, records={}, captured={}, streams={}, pendingCheckoutId=null;
+const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+
+Object.assign(window,{
+  saveSetup,showSetup,switchTab,handleCaptureTap,snapPhoto,retake,
+  handleFileUpload,doCheckin,initiateCheckout,confirmCheckout,
+  denyCheckout,closeModal,openLightbox,closeLightbox,
+  clearAllData,renderRegistry,pinPress,pinDelete,selectMatch,
+  directCheckout,rescanPlates,handleApprove
+});
+
+// ── PIN ───────────────────────────────────────────────────────────────────────
+let pinEntry="";
+function checkPin(){
+  if(sessionStorage.getItem(PIN_SESSION)==="true"){
+    document.getElementById("pinScreen").classList.add("hidden");
+    checkSetup();
+  } else {
+    document.getElementById("pinScreen").classList.remove("hidden");
+  }
+}
+function pinPress(d){
+  if(pinEntry.length>=4) return;
+  pinEntry+=d; updatePinDots();
+  if(pinEntry.length===4) setTimeout(validatePin,150);
+}
+function pinDelete(){
+  pinEntry=pinEntry.slice(0,-1); updatePinDots();
+  document.getElementById("pinError").textContent="";
+}
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    const dot=document.getElementById("pd"+i);
+    dot.classList.toggle("filled",i<pinEntry.length);
+    dot.classList.remove("error");
+  }
+}
+function validatePin(){
+  if(pinEntry===CORRECT_PIN){
+    sessionStorage.setItem(PIN_SESSION,"true");
+    document.getElementById("pinScreen").classList.add("hidden");
+    checkSetup();
+  } else {
+    for(let i=0;i<4;i++) document.getElementById("pd"+i).classList.add("error");
+    document.getElementById("pinError").textContent="Incorrect PIN. Try again.";
+    setTimeout(()=>{pinEntry="";updatePinDots();},900);
+  }
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+function checkSetup(){
+  const name=localStorage.getItem(ATTENDANT_KEY);
+  if(!name){ document.getElementById("setupScreen").classList.remove("hidden"); }
+  else { document.getElementById("setupScreen").classList.add("hidden"); init(name); }
+}
+function saveSetup(){
+  const name=document.getElementById("attendantInput").value.trim();
+  if(!name){alert("Please enter your gate name.");return;}
+  localStorage.setItem(ATTENDANT_KEY,name);
+  document.getElementById("setupScreen").classList.add("hidden");
+  init(name);
+}
+function showSetup(){
+  document.getElementById("attendantInput").value=localStorage.getItem(ATTENDANT_KEY)||"";
+  document.getElementById("setupScreen").classList.remove("hidden");
+}
+
+// ── FIREBASE ──────────────────────────────────────────────────────────────────
+function init(name){
+  document.getElementById("attendantBadge").textContent=name;
+  const dot=document.getElementById("syncDot");
+  try{
+    const app=initializeApp(FIREBASE_CFG,"gmc-parking");
+    db=getDatabase(app);
+    onValue(ref(db,`parking/${TODAY}`),snap=>{
+      records=snap.val()||{};
+      dot.className="sync-dot live";
+      updateStats(); renderRegistry();
+    },err=>{
+      dot.className="sync-dot error";
+      showToast("Sync error: "+err.message,"error");
+    });
+    showToast("✓ Connected — Fast Lane ready.","success");
+  }catch(e){
+    dot.className="sync-dot error";
+    showToast("Firebase error: "+e.message,"error");
+  }
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(name,btn){
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("panel-"+name).classList.add("active");
+  btn.classList.add("active");
+}
+
+// ── CAMERA ────────────────────────────────────────────────────────────────────
+function handleCaptureTap(type){
+  if(captured[type]) return;
+  if(isMobile){document.getElementById(fileId(type)).click();return;}
+  startDesktopCamera(type);
+}
+async function startDesktopCamera(type){
+  try{
+    const rear=type==="car"||type==="coCar";
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:rear?"environment":"user"}});
+    streams[type]=stream;
+    const box=document.getElementById(boxId(type));
+    box.querySelectorAll(".capture-icon,.capture-label").forEach(el=>el.style.display="none");
+    const v=document.createElement("video");v.autoplay=true;v.playsInline=true;v.srcObject=stream;
+    v.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px";
+    box.appendChild(v);
+    document.getElementById(ctrlId(type)).style.display="flex";
+  }catch{document.getElementById(fileId(type)).click();}
+}
+function snapPhoto(type){
+  const v=document.getElementById(boxId(type)).querySelector("video");if(!v)return;
+  const c=document.createElement("canvas");c.width=v.videoWidth||640;c.height=v.videoHeight||480;
+  c.getContext("2d").drawImage(v,0,0);
+  setPreview(type,c.toDataURL("image/jpeg",.82));
+  streams[type]?.getTracks().forEach(t=>t.stop());delete streams[type];
+}
+function retake(type){
+  delete captured[type];
+  const box=document.getElementById(boxId(type));box.classList.remove("captured");
+  box.querySelectorAll("video,img.preview").forEach(el=>el.remove());
+  box.querySelectorAll(".capture-icon,.capture-label").forEach(el=>el.style.display="");
+  document.getElementById(ctrlId(type)).style.display="none";
+  document.getElementById(fileId(type)).value="";
+}
+function handleFileUpload(type,input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=720;let w=img.width,h=img.height;
+      if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r);}
+      const c=document.createElement("canvas");c.width=w;c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      setPreview(type,c.toDataURL("image/jpeg",.80));
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function setPreview(type,dataUrl){
+  captured[type]=dataUrl;
+  const box=document.getElementById(boxId(type));box.classList.add("captured");
+  box.querySelectorAll("video,.capture-icon,.capture-label").forEach(el=>el.remove());
+  const img=document.createElement("img");img.src=dataUrl;img.className="preview";box.appendChild(img);
+  document.getElementById(ctrlId(type)).style.display="flex";
+}
+const boxId =t=>({car:"carBox",driver:"driverBox",coCar:"coCarBox"})[t]||t+"Box";
+const fileId=t=>({car:"carFile",driver:"driverFile",coCar:"coCarFile"})[t]||t+"File";
+const ctrlId=t=>({car:"carControls",driver:"driverControls",coCar:"coCarControls"})[t]||t+"Controls";
+
+// ── CHECK-IN (fast — reads plate at entry) ───────────────────────────────────
+async function doCheckin(){
+  if(!db){showToast("Not connected yet.","error");return;}
+  if(!captured.car)    {showToast("Please capture the vehicle photo.","error");return;}
+  if(!captured.driver) {showToast("Please capture the driver photo.","error");return;}
+  const gate=localStorage.getItem(ATTENDANT_KEY)||"Unknown";
+  const t=new Date().toLocaleTimeString("en-ZA",{hour:"2-digit",minute:"2-digit"});
+
+  // Read plate from entry car photo immediately
+  let entryPlate=null;
+  try{
+    const toB64=d=>d.split(",")[1];
+    const mime =d=>d.split(";")[0].split(":")[1];
+    const pr=await fetch(PROXY_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","X-GMC-Token":PROXY_TOKEN},
+      body:JSON.stringify({model:"claude-opus-4-5",max_tokens:60,messages:[{
+        role:"user",content:[
+          {type:"image",source:{type:"base64",media_type:mime(captured.car),data:toB64(captured.car)}},
+          {type:"text",text:`Read the vehicle license plate. Reply ONLY valid JSON: {"plate":"ABC 123 GP"} or {"plate":null}`}
+        ]
+      }]})
+    });
+    if(pr.ok){
+      const pd=await pr.json();
+      const pt=(pd.content||[]).map(c=>c.text||"").join("").replace(/```json|```/g,"").trim();
+      entryPlate=JSON.parse(pt)?.plate||null;
+    }
+  }catch(e){ /* plate reading failed — continue without it */ }
+
+  try{
+    await set(push(ref(db,`parking/${TODAY}`)),
+      {carImg:captured.car,driverImg:captured.driver,timeIn:t,timeOut:null,
+       status:"in",gate,plate:entryPlate,ts:Date.now(),mode:"fast"});
+    delete captured.car;delete captured.driver;
+    ["car","driver"].forEach(t=>retake(t));
+    showToast(entryPlate ? `✓ Checked in · ${entryPlate}` : "✓ Vehicle registered — next!","success");
+  }catch(e){showToast("Save failed: "+e.message,"error");}
+}
+
+// ── CHECK-OUT ─────────────────────────────────────────────────────────────────
+function initiateCheckout(){
+  if(!db){showToast("Not connected yet.","error");return;}
+  if(!captured.coCar){showToast("Please capture the exit vehicle photo.","error");return;}
+  const inside=Object.entries(records).filter(([,r])=>r.status==="in");
+  if(!inside.length){showToast("No vehicles currently checked in.","warn");return;}
+  pendingCheckoutId=null;
+  openVerifyModal();
+  runAIMatch(inside);
+}
+
+function openVerifyModal(){
+  document.getElementById("stateSearching").style.display="block";
+  document.getElementById("stateResult").style.display="none";
+  document.getElementById("matchSelector").style.display="none";
+  document.getElementById("verifyModal").classList.add("open");
+}
+
+async function runAIMatch(insideEntries){
+  const toB64=d=>d.split(",")[1];
+  const mime =d=>d.split(";")[0].split(":")[1];
+  const cleanPlate=p=>p?p.replace(/[\s\-\.]/g,"").toUpperCase():"";
+
+  // Levenshtein distance for fuzzy plate matching (handles OCR errors)
+  function levenshtein(a,b){
+    const m=a.length,n=b.length;
+    const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+    for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+
+  // Step 1: Read exit vehicle plate
+  let exitPlate=null;
+  try{
+    const pr=await fetch(PROXY_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","X-GMC-Token":PROXY_TOKEN},
+      body:JSON.stringify({model:"claude-opus-4-5",max_tokens:60,messages:[{
+        role:"user",content:[
+          {type:"image",source:{type:"base64",media_type:mime(captured.coCar),data:toB64(captured.coCar)}},
+          {type:"text",text:`Read the vehicle license plate. Reply ONLY valid JSON: {"plate":"ABC 123 GP"} or {"plate":null}`}
+        ]
+      }]})
+    });
+    if(pr.ok){
+      const pd=await pr.json();
+      const pt=(pd.content||[]).map(c=>c.text||"").join("").replace(/```json|```/g,"").trim();
+      exitPlate=JSON.parse(pt)?.plate||null;
+    }
+  }catch(e){/* continue */}
+
+  const exitClean=cleanPlate(exitPlate);
+
+  // Step 2: Match against stored plates — fuzzy match (ignore spaces, dashes, special chars)
+  const scored=insideEntries.map(([id,r])=>{
+    const storedPlate=r.plate||null;
+    const storedClean=cleanPlate(storedPlate);
+    let confidence="low", reason="No plate data — visual check required", isBest=false;
+
+    if(storedClean && exitClean){
+      if(storedClean===exitClean){
+        // Exact match after cleaning
+        confidence="high"; reason=`Plate match: ${storedPlate}`; isBest=true;
+      } else if(
+        storedClean.includes(exitClean) || exitClean.includes(storedClean) ||
+        // Match if 80% of characters align (handles OCR errors like 0 vs O, 1 vs I)
+        levenshtein(storedClean,exitClean) <= 2
+      ){
+        confidence="medium"; reason=`Close match: ${storedPlate}`;
+      } else {
+        confidence="low"; reason=`Different plate: ${storedPlate}`;
+      }
+    } else if(storedPlate){
+      confidence="low"; reason=`Entry plate: ${storedPlate} (exit plate unreadable)`;
+    } else {
+      confidence="low"; reason="No plate stored — visual check required";
+    }
+    return {id,r,confidence,reason,isBest,entryPlate:storedPlate};
+  });
+
+  // Sort: exact matches first, then medium, then low
+  // KEY FIX: if any high/medium matches exist, push no-plate records to the bottom
+  const hasGoodMatch = scored.some(s=>s.confidence==="high"||s.confidence==="medium");
+  scored.sort((a,b)=>{
+    const order={high:0,medium:1,low:2};
+    // If we have good matches, deprioritise no-plate entries
+    if(hasGoodMatch){
+      const aNoPlate = !a.entryPlate ? 1 : 0;
+      const bNoPlate = !b.entryPlate ? 1 : 0;
+      if(aNoPlate !== bNoPlate) return aNoPlate - bNoPlate;
+    }
+    const diff=(order[a.confidence]||2)-(order[b.confidence]||2);
+    if(diff!==0) return diff;
+    return (b.r.ts||0)-(a.r.ts||0);
+  });
+
+  const bestMatch=scored.find(s=>s.isBest)||scored[0];
+  if(bestMatch) pendingCheckoutId=bestMatch.id;
+
+  showVerifyResult({
+    best_match_id: scored.find(s=>s.isBest)?.id||null,
+    exitPlate,
+    scored,
+    summary: scored.find(s=>s.isBest)
+      ? `Plate ${exitPlate} matched to entry at ${bestMatch.r.timeIn}`
+      : exitPlate
+        ? `Exit plate ${exitPlate} — no matching entry plate found`
+        : "Exit plate unreadable — select manually"
+  }, insideEntries, null, scored);
+}
+
+function showVerifyResult(result, insideEntries, errMsg, preScoredList){
+  document.getElementById("stateSearching").style.display="none";
+  document.getElementById("stateResult").style.display="block";
+
+  const statusEl=document.getElementById("aiStatus");
+  const selectorEl=document.getElementById("matchSelector");
+  const listEl=document.getElementById("matchList");
+
+  // Use pre-scored list if provided, otherwise sort by time
+  const order={high:0,medium:1,low:2};
+  const scored = preScoredList || insideEntries.map(([id,r])=>({
+    id,r,confidence:"low",reason:"",isBest:false,entryPlate:null
+  })).sort((a,b)=>(b.r.ts||0)-(a.r.ts||0));
+
+  const autoSelect=result?.best_match_id || scored[0]?.id || null;
+  if(autoSelect) pendingCheckoutId=autoSelect;
+
+  if(errMsg){
+    statusEl.className="ai-status multiple";
+    statusEl.innerHTML=`⚠ ${errMsg} — select manually below.`;
+  } else if(result?.best_match_id){
+    statusEl.className="ai-status found";
+    statusEl.innerHTML=`✓ ${result.summary||"Match found"}`;
+  } else {
+    statusEl.className="ai-status multiple";
+    statusEl.innerHTML=`⚠ ${result?.summary||"No confident match"} — select manually below.`;
+  }
+
+  // Always show top match driver immediately
+  const topMatch=scored[0];
+  if(topMatch?.r) showDriverComparison(topMatch.r, result?.exitPlate);
+
+  // Always show full list sorted by confidence
+  selectorEl.style.display="block";
+  listEl.innerHTML=scored.map(({id,r,confidence,reason,isBest,entryPlate},idx)=>`
+    <div class="match-item ${(isBest||idx===0)?"selected":""}" id="mi-${id}" onclick="selectMatch('${id}')">
+      <img src="${r.carImg}" alt="car">
+      <img class="round" src="${r.driverImg}" alt="driver">
+      <div class="match-info">
+        <div class="match-gate">${r.gate||"Unknown"}</div>
+        <div class="match-time">In at ${r.timeIn||"—"}</div>
+        <div style="font-size:.68rem;font-weight:600;color:var(--deep);letter-spacing:.04em;margin-top:2px">${entryPlate||"Plate not visible"}</div>
+        ${reason&&reason!==`Plate: ${entryPlate}`?`<div style="font-size:.6rem;color:var(--muted)">${reason}</div>`:""}
+      </div>
+      <span class="match-conf ${confidence}">${confidence}</span>
+    </div>`).join("");
+}
+
+function showDriverComparison(record, exitPlate){
+  document.getElementById("driverCompare").innerHTML=`
+    <div class="driver-box entry">
+      <img src="${record.driverImg}" alt="Entry driver" onclick="openLightbox(null,null,'${record.driverImg}')">
+      <div class="driver-box-label">Entry Driver<span>${record.gate||""} · ${record.timeIn||""}</span></div>
+    </div>
+    <div class="driver-box exit">
+      <img src="${captured.coCar}" alt="Exit vehicle" onclick="openLightbox(null,null,'${captured.coCar}')">
+      <div class="driver-box-label">Exit Vehicle${exitPlate?` · <strong style="color:var(--gold-light);letter-spacing:.06em">${exitPlate}</strong>`:""}<span>${localStorage.getItem(ATTENDANT_KEY)||""} · Now</span></div>
+    </div>`;
+}
+
+function selectMatch(id){
+  pendingCheckoutId=id;
+  document.querySelectorAll(".match-item").forEach(el=>el.classList.remove("selected"));
+  document.getElementById("mi-"+id)?.classList.add("selected");
+  const r=records[id];
+  // Preserve exit plate when switching
+  const exitPlateEl=document.querySelector(".driver-box.exit .driver-box-label strong");
+  const exitPlate=exitPlateEl?exitPlateEl.textContent:null;
+  if(r) showDriverComparison(r, exitPlate);
+}
+
+async function confirmCheckout(){
+  if(!pendingCheckoutId){showToast("Please select a matching entry first.","warn");return;}
+  const r=records[pendingCheckoutId];if(!r)return;
+  const t=new Date().toLocaleTimeString("en-ZA",{hour:"2-digit",minute:"2-digit"});
+  const exitGate=localStorage.getItem(ATTENDANT_KEY)||"Unknown";
+  try{
+    await update(ref(db,`parking/${TODAY}/${pendingCheckoutId}`),{status:"out",timeOut:t,exitGate,exitCarImg:captured.coCar});
+    closeModal();
+    delete captured.coCar; retake("coCar");
+    showToast("✓ Vehicle checked out — next!","success");
+  }catch(e){showToast("Update failed: "+e.message,"error");}
+}
+
+function denyCheckout(){
+  const r=pendingCheckoutId?records[pendingCheckoutId]:null;
+  closeModal();
+  showToast("🚨 Exit DENIED for vehicle from "+(r?.gate||"unknown gate")+". Alert security!","error");
+}
+
+function closeModal(){
+  document.getElementById("verifyModal").classList.remove("open");
+  pendingCheckoutId=null;
+}
+
+// ── RESCAN PLATES ─────────────────────────────────────────────────────────────
+async function rescanPlates(){
+  const toB64=d=>d.split(",")[1];
+  const mime =d=>d.split(";")[0].split(":")[1];
+  const noPlate=Object.entries(records).filter(([,r])=>!r.plate&&r.carImg);
+  if(!noPlate.length){showToast("All entry records already have plates.","success");return;}
+  showToast(`Scanning plates for ${noPlate.length} vehicle${noPlate.length!==1?"s":""}…`,"warn");
+  let updated=0, failed=0;
+  for(const [id,r] of noPlate){
+    try{
+      const pr=await fetch(PROXY_URL,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","X-GMC-Token":PROXY_TOKEN},
+        body:JSON.stringify({model:"claude-opus-4-5",max_tokens:60,messages:[{
+          role:"user",content:[
+            {type:"image",source:{type:"base64",media_type:mime(r.carImg),data:toB64(r.carImg)}},
+            {type:"text",text:`Read the vehicle license plate. Reply ONLY valid JSON: {"plate":"ABC 123 GP"} or {"plate":null}`}
+          ]
+        }]})
+      });
+      if(pr.ok){
+        const pd=await pr.json();
+        const pt=(pd.content||[]).map(c=>c.text||"").join("").replace(/```json|```/g,"").trim();
+        const plate=JSON.parse(pt)?.plate||null;
+        if(plate){
+          await update(ref(db,`parking/${TODAY}/${id}`),{plate});
+          updated++;
+        } else { failed++; }
+      }
+    }catch(e){ failed++; }
+  }
+  showToast(`✓ ${updated} plates scanned${failed>0?`, ${failed} unreadable`:""}. Ready to match.`,"success");
+}
+window.rescanPlates=rescanPlates;
+function renderRegistry(){
+  const q=(document.getElementById("searchInput")?.value||"").toLowerCase();
+  const all=Object.entries(records).map(([id,r])=>({id,...r}))
+    .filter(r=>(r.gate||"").toLowerCase().includes(q)
+             ||(r.plate||"").toLowerCase().includes(q))
+    .sort((a,b)=>(b.ts||0)-(a.ts||0));
+  document.getElementById("regCount").textContent=all.length+" vehicle"+(all.length!==1?"s":"");
+  const body=document.getElementById("registryBody");
+  if(!all.length){
+    body.innerHTML=`<div class="empty-state"><div class="icon">🚗</div><p>No vehicles match your search.</p></div>`;
+    return;
+  }
+  body.innerHTML=`<div style="display:flex;flex-direction:column;gap:0">${all.map(r=>`
+    <div style="display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;border-bottom:1px solid rgba(200,169,110,.08);">
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <img style="width:42px;height:42px;border-radius:7px;object-fit:cover;border:1.5px solid rgba(200,169,110,.3);cursor:pointer"
+          src="${r.carImg||''}" onclick="openLightbox('${r.id}','car')">
+        <img style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(200,169,110,.3);cursor:pointer"
+          src="${r.driverImg||''}" onclick="openLightbox('${r.id}','driver')">
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;letter-spacing:.06em;color:${r.plate?'var(--deep)':'var(--muted)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          ${r.plate||'No plate'}
+        </div>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:2px;white-space:nowrap">
+          ${r.gate||'—'} · ${r.timeIn||'—'}
+          ${r.exitGate?` → ${r.exitGate}`:''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+        <span class="status-pill ${r.status==='in'?'status-in':'status-out'}" style="white-space:nowrap">
+          ${r.status==='in'?'● Inside':'✓ Exited'}
+        </span>
+        ${r.status==='in'
+          ? `<button class="action-btn btn-checkout" onclick="directCheckout('${r.id}')"
+              style="font-size:.72rem;padding:5px 12px;white-space:nowrap">✓ Check Out</button>`
+          : `<span style="font-size:.65rem;color:var(--muted)">${r.timeOut||''}</span>`
+        }
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+// Direct checkout from registry — no photo needed, shows entry photos for visual confirm
+function directCheckout(id){
+  const r=records[id]; if(!r) return;
+  pendingCheckoutId=id;
+
+  // Open verify modal showing entry car + driver, skip AI matching entirely
+  document.getElementById("stateSearching").style.display="none";
+  document.getElementById("stateResult").style.display="block";
+  document.getElementById("matchSelector").style.display="none";
+
+  const statusEl=document.getElementById("aiStatus");
+  statusEl.className="ai-status found";
+  statusEl.innerHTML=`✓ ${r.plate||"Vehicle"} selected from registry · In at ${r.timeIn||"—"} via ${r.gate||"—"}`;
+
+  // Show entry car AND driver side by side
+  document.getElementById("driverCompare").innerHTML=`
+    <div class="driver-box entry">
+      <img src="${r.carImg||''}" alt="Entry car" onclick="openLightbox(null,null,'${r.carImg||''}')">
+      <div class="driver-box-label">Entry Vehicle<span>${r.plate||""} · ${r.timeIn||""}</span></div>
+    </div>
+    <div class="driver-box exit">
+      <img src="${r.driverImg||''}" alt="Entry driver" onclick="openLightbox(null,null,'${r.driverImg||''}')">
+      <div class="driver-box-label">Entry Driver<span>${r.gate||""}</span></div>
+    </div>`;
+
+  document.getElementById("modalTitle").textContent="✓ Confirm Exit";
+  document.getElementById("modalSub").textContent="Confirm the vehicle and driver before approving exit.";
+
+  // Update instruction
+  document.querySelector(".instruction").innerHTML=
+    `<strong>Confirm visually</strong> — is this the correct vehicle and the same driver who is exiting?`;
+
+  document.getElementById("verifyModal").classList.add("open");
+}
+
+// ── UNIFIED APPROVE — handles both photo checkout and direct registry checkout
+async function handleApprove(){
+  if(!pendingCheckoutId){showToast("No vehicle selected.","warn");return;}
+  const r=records[pendingCheckoutId]; if(!r) return;
+  const t=new Date().toLocaleTimeString("en-ZA",{hour:"2-digit",minute:"2-digit"});
+  const exitGate=localStorage.getItem(ATTENDANT_KEY)||"Unknown";
+  try{
+    const updateData={status:"out",timeOut:t,exitGate};
+    if(captured.coCar) updateData.exitCarImg=captured.coCar;
+    await update(ref(db,`parking/${TODAY}/${pendingCheckoutId}`),updateData);
+    closeModal();
+    if(captured.coCar){ delete captured.coCar; retake("coCar"); }
+    showToast(`✓ ${r.plate||"Vehicle"} checked out.`,"success");
+  }catch(e){showToast("Update failed: "+e.message,"error");}
+}
+window.handleApprove=handleApprove;
+
+// Override confirmCheckout to handle direct registry checkout (no captured.coCar)
+const _originalConfirm=window.confirmCheckout;
+window.directCheckoutConfirm=handleApprove;
+
+function quickCheckout(id){
+  document.querySelectorAll(".tab-btn").forEach((b,i)=>b.classList.toggle("active",i===1));
+  document.querySelectorAll(".panel").forEach((p,i)=>p.classList.toggle("active",i===1));
+  showToast("Capture exit vehicle photo then tap Find Match.","warn");
+}
+
+function updateStats(){
+  const all=Object.values(records);
+  document.getElementById("statTotal").textContent=all.length;
+  document.getElementById("statInside").textContent=all.filter(r=>r.status==="in").length;
+  document.getElementById("statOut").textContent=all.filter(r=>r.status==="out").length;
+  document.getElementById("statGates").textContent=new Set(all.map(r=>r.gate).filter(Boolean)).size;
+}
+
+function openLightbox(id,type,directSrc){
+  const src=directSrc||(type==="car"?records[id]?.carImg:records[id]?.driverImg);
+  if(!src)return;
+  document.getElementById("lightboxImg").src=src;
+  document.getElementById("lightbox").classList.add("open");
+}
+function closeLightbox(){document.getElementById("lightbox").classList.remove("open");}
+
+async function clearAllData(){
+  if(!confirm("Clear ALL records for today from the shared database?")) return;
+  try{await remove(ref(db,`parking/${TODAY}`));showToast("Today's data cleared.","warn");}
+  catch(e){showToast("Clear failed: "+e.message,"error");}
+}
+
+function showToast(msg,type="success"){
+  const c=document.getElementById("toastContainer");
+  const t=document.createElement("div");t.className="toast "+type;t.textContent=msg;
+  c.appendChild(t);setTimeout(()=>t.remove(),4000);
+}
+
+checkPin();
+</script>
+</body>
+</html>
