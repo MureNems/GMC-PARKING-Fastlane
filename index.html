@@ -1006,7 +1006,8 @@ function openLightbox(id,type,directSrc){
 function closeLightbox(){document.getElementById("lightbox").classList.remove("open");}
 
 async function clearAllData(){
-  if(!confirm("Clear ALL records for today from the shared database?")) return;
+  const input=prompt("⚠ This will permanently delete ALL today's records from all devices.\n\nType CLEAR to confirm:");
+  if(input?.trim().toUpperCase()!=="CLEAR"){showToast("Clear cancelled.","warn");return;}
   try{await remove(ref(db,`parking/${TODAY}`));showToast("Today's data cleared.","warn");}
   catch(e){showToast("Clear failed: "+e.message,"error");}
 }
