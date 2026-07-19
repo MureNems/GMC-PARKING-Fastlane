@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GMC Parking — Plate Review</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#C8A96E;--gold-light:#E2C99A;--gold-dark:#9A7A45;
+  --cream:#FAF6EF;--deep:#1A1508;--mid:#4A3B1A;--muted:#8A7A5A;
+  --white:#FFFFFF;--success:#3D8B6A;--danger:#8B3D3D;--warn:#8B6E3D;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:var(--cream);color:var(--deep);min-height:100vh}
+
+header{background:var(--deep);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:62px;box-shadow:0 2px 20px rgba(0,0,0,.4)}
+.header-brand{display:flex;align-items:center;gap:11px}
+.header-logo{width:40px;height:40px;border-radius:50%;border:2px solid var(--gold);object-fit:cover}
+.brand-text h1{font-family:"Cormorant Garamond",serif;font-size:1rem;font-weight:600;color:var(--gold-light);letter-spacing:.06em}
+.brand-text p{font-size:.6rem;color:var(--muted);letter-spacing:.13em;text-transform:uppercase}
+
+main{max-width:1100px;margin:0 auto;padding:1.5rem 1rem}
+
+.toolbar{background:var(--white);border-radius:12px;padding:1.2rem 1.5rem;margin-bottom:1.5rem;border:1px solid rgba(200,169,110,.2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.toolbar h2{font-family:"Cormorant Garamond",serif;font-size:1.3rem;color:var(--deep)}
+.toolbar p{font-size:.76rem;color:var(--muted);margin-top:.2rem}
+.btn-group{display:flex;gap:.7rem;flex-wrap:wrap}
+.btn{padding:.6rem 1.2rem;border:none;border-radius:7px;font-family:"DM Sans",sans-serif;font-size:.78rem;font-weight:500;cursor:pointer;transition:all .2s;letter-spacing:.03em}
+.btn-gold{background:var(--gold);color:var(--deep)}
+.btn-gold:hover{background:var(--gold-light)}
+.btn-outline{background:transparent;border:1px solid rgba(200,169,110,.4);color:var(--mid)}
+.btn-outline:hover{background:rgba(200,169,110,.08)}
+.btn-danger{background:rgba(139,61,61,.1);color:var(--danger);border:1px solid rgba(139,61,61,.2)}
+.btn-danger:hover{background:rgba(139,61,61,.18)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.progress-bar{background:var(--white);border-radius:10px;padding:1rem 1.5rem;margin-bottom:1.5rem;border:1px solid rgba(200,169,110,.2);display:none}
+.progress-bar.visible{display:block}
+.progress-label{font-size:.78rem;color:var(--muted);margin-bottom:.5rem}
+.progress-track{height:6px;background:rgba(200,169,110,.15);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .3s;width:0%}
+.progress-status{font-size:.72rem;color:var(--muted);margin-top:.4rem}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-bottom:1.5rem}
+@media(max-width:600px){.stats-row{grid-template-columns:1fr 1fr}}
+.stat{background:var(--white);border-radius:10px;padding:.9rem;border:1px solid rgba(200,169,110,.15);text-align:center}
+.stat-num{font-family:"Cormorant Garamond",serif;font-size:1.8rem;font-weight:700;color:var(--gold-dark);line-height:1}
+.stat-lbl{font-size:.6rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
+
+.filter-row{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+.filter-btn{padding:.4rem .9rem;border-radius:20px;border:1px solid rgba(200,169,110,.25);background:transparent;color:var(--muted);font-size:.72rem;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .2s}
+.filter-btn.active{background:var(--gold);color:var(--deep);border-color:var(--gold)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.card{background:var(--white);border-radius:14px;overflow:hidden;border:1px solid rgba(200,169,110,.15);transition:all .3s;position:relative}
+.card:hover{border-color:rgba(200,169,110,.4);transform:translateY(-2px);box-shadow:0 8px 24px rgba(26,21,8,.08)}
+.card.has-plate{border-color:rgba(61,139,106,.25)}
+.card.no-plate{border-color:rgba(200,169,110,.2)}
+.card.error{border-color:rgba(139,61,61,.2)}
+
+.card-photos{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.card-photos img{width:100%;aspect-ratio:1;object-fit:cover;cursor:pointer;transition:opacity .2s}
+.card-photos img:hover{opacity:.9}
+.card-photos img:first-child{border-right:2px solid var(--cream)}
+
+.card-body{padding:.9rem 1rem}
+.card-plate{font-family:"Cormorant Garamond",serif;font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:var(--deep);margin-bottom:.3rem;min-height:1.8rem;display:flex;align-items:center;gap:.5rem}
+.card-plate.pending{color:var(--muted);font-size:1rem;font-style:italic}
+.card-plate.not-found{color:var(--warn);font-size:.85rem}
+.plate-badge{font-size:.6rem;padding:2px 7px;border-radius:3px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-family:"DM Sans",sans-serif}
+.plate-badge.stored{background:rgba(61,139,106,.12);color:var(--success)}
+.plate-badge.scanned{background:rgba(200,169,110,.15);color:var(--gold-dark)}
+.plate-badge.manual{background:rgba(139,110,61,.12);color:var(--warn)}
+
+.card-meta{font-size:.72rem;color:var(--muted);margin-bottom:.7rem}
+.card-meta span{margin-right:.8rem}
+
+.card-actions{display:flex;gap:.5rem;align-items:center}
+.plate-input{flex:1;padding:.45rem .7rem;border:1.5px solid rgba(200,169,110,.3);border-radius:6px;font-family:"Cormorant Garamond",serif;font-size:1rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--deep);background:var(--cream);outline:none}
+.plate-input:focus{border-color:var(--gold)}
+.save-btn{padding:.45rem .8rem;background:var(--gold);color:var(--deep);border:none;border-radius:6px;font-size:.72rem;cursor:pointer;font-family:"DM Sans",sans-serif;font-weight:500;white-space:nowrap;transition:all .2s}
+.save-btn:hover{background:var(--gold-light)}
+.scan-btn{padding:.45rem .8rem;background:rgba(200,169,110,.1);color:var(--mid);border:1px solid rgba(200,169,110,.3);border-radius:6px;font-size:.72rem;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .2s;white-space:nowrap}
+.scan-btn:hover{background:rgba(200,169,110,.2)}
+.scan-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.spinner{width:14px;height:14px;border:2px solid rgba(200,169,110,.3);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty-state{text-align:center;padding:3rem;color:var(--muted);background:var(--white);border-radius:14px;border:1px solid rgba(200,169,110,.15)}
+.empty-state .icon{font-size:2rem;margin-bottom:.8rem}
+
+.toast-container{position:fixed;top:70px;right:12px;z-index:1000;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--deep);border-left:4px solid var(--gold);color:var(--cream);padding:.75rem 1rem;border-radius:10px;font-size:.78rem;max-width:280px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideIn .3s ease,fadeOut .4s 4s forwards}
+.toast.success{border-color:var(--success)}.toast.error{border-color:var(--danger)}.toast.warn{border-color:var(--warn)}
+@keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{to{opacity:0;transform:translateX(110%)}}
+
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:900;display:none;align-items:center;justify-content:center}
+.lightbox.open{display:flex}
+.lightbox img{max-width:90vw;max-height:85vh;border-radius:10px}
+.lightbox-close{position:absolute;top:14px;right:16px;background:none;border:none;color:white;font-size:1.7rem;cursor:pointer}
+
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .4s;display:inline-block}
+.sync-dot.live{background:var(--success);box-shadow:0 0 6px rgba(61,139,106,.8);animation:pdot 2s infinite}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.35}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <img class="header-logo" src="data:image/jpeg;base64,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" alt="GMC">
+    <div class="brand-text">
+      <h1>Grace Mission Church</h1>
+      <p>Plate Review Tool</p>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="sync-dot" id="syncDot"></div>
+    <span style="font-size:.7rem;color:var(--muted)" id="syncLabel">Connecting…</span>
+  </div>
+</header>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close">✕</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<main>
+  <div class="toolbar">
+    <div>
+      <h2>Today's Entry Records</h2>
+      <p id="toolbarSub">Loading records from Firebase…</p>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-outline" onclick="loadRecords()">↺ Refresh</button>
+      <button class="btn btn-gold" id="scanAllBtn" onclick="scanAllMissing()" disabled>🔍 Scan All Missing Plates</button>
+      <button class="btn btn-outline" id="dedupBtn" onclick="removeDuplicates()" disabled>🔀 Remove Duplicates</button>
+      <button class="btn btn-danger" onclick="saveAllToFirebase()">💾 Save All to Firebase</button>
+      <button class="btn btn-danger" onclick="clearAllData()" style="background:rgba(139,61,61,.2);border-color:rgba(139,61,61,.4)">🗑 Clear Today's Data</button>
+    </div>
+  </div>
+
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-label" id="progressLabel">Scanning plates…</div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-status" id="progressStatus"></div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-num" id="statTotal">—</div><div class="stat-lbl">Total Entries</div></div>
+    <div class="stat"><div class="stat-num" id="statHasPlate">—</div><div class="stat-lbl">Plates Found</div></div>
+    <div class="stat"><div class="stat-num" id="statNoPlate">—</div><div class="stat-lbl">Missing Plates</div></div>
+    <div class="stat"><div class="stat-num" id="statInside">—</div><div class="stat-lbl">Still Inside</div></div>
+  </div>
+
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('missing',this)">Missing Plates</button>
+    <button class="filter-btn" onclick="setFilter('found',this)">Plates Found</button>
+    <button class="filter-btn" onclick="setFilter('inside',this)">Still Inside</button>
+  </div>
+
+  <div class="grid" id="recordGrid">
+    <div class="empty-state"><div class="icon">🔄</div><p>Loading records…</p></div>
+  </div>
+</main>
+
+<script type="module">
+import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, update, remove }
+                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const FIREBASE_CFG = {
+  apiKey: "AIzaSyCBDnEIi8zc_XFUluS9WbCoLX7daBMKV9M",
+  authDomain: "gmc-parking-14a20.firebaseapp.com",
+  databaseURL: "https://gmc-parking-14a20-default-rtdb.firebaseio.com",
+  projectId: "gmc-parking-14a20",
+  storageBucket: "gmc-parking-14a20.firebasestorage.app",
+  messagingSenderId: "551223582953",
+  appId: "1:551223582953:web:7a508def2c3f85c1b59078"
+};
+const PROXY_URL   = "https://gmc-proxy.nemamur.workers.dev";
+const PROXY_TOKEN = "Masakona2026";
+const TODAY = new Date().toISOString().slice(0,10);
+
+let db=null, records={}, localPlates={}, currentFilter="all";
+let scanning=false;
+
+Object.assign(window,{loadRecords,scanAllMissing,saveAllToFirebase,
+  scanSingle,saveSingle,setFilter,openLightbox,closeLightbox});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+const app=initializeApp(FIREBASE_CFG,"gmc-review");
+db=getDatabase(app);
+const dot=document.getElementById("syncDot");
+
+onValue(ref(db,`parking/${TODAY}`),snap=>{
+  records=snap.val()||{};
+  dot.className="sync-dot live";
+  document.getElementById("syncLabel").textContent="Live";
+  updateStats();
+  renderGrid();
+  document.getElementById("scanAllBtn").disabled=false;
+  document.getElementById("dedupBtn").disabled=false;
+  const missing=Object.values(records).filter(r=>!r.plate&&r.carImg).length;
+  const dupes=findDuplicatePlates();
+  document.getElementById("toolbarSub").textContent=
+    `${Object.keys(records).length} entries today · ${missing} missing plates${dupes.length>0?` · ⚠ ${dupes.length} duplicate plate${dupes.length!==1?"s":""} found`:""}`;
+},err=>{
+  dot.className="sync-dot error";
+  document.getElementById("syncLabel").textContent="Offline";
+  showToast("Firebase error: "+err.message,"error");
+});
+
+function loadRecords(){
+  showToast("Refreshed from Firebase.","success");
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function updateStats(){
+  const all=Object.entries(records);
+  const hasPlate=all.filter(([,r])=>r.plate||localPlates[all.find(([id])=>id)?.[0]]);
+  const withPlate=all.filter(([id,r])=>r.plate||localPlates[id]).length;
+  document.getElementById("statTotal").textContent=all.length;
+  document.getElementById("statHasPlate").textContent=withPlate;
+  document.getElementById("statNoPlate").textContent=all.length-withPlate;
+  document.getElementById("statInside").textContent=all.filter(([,r])=>r.status==="in").length;
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────────
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  renderGrid();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderGrid(){
+  const all=Object.entries(records).sort((a,b)=>(b[1].ts||0)-(a[1].ts||0));
+  const filtered=all.filter(([id,r])=>{
+    const plate=r.plate||localPlates[id];
+    if(currentFilter==="missing") return !plate;
+    if(currentFilter==="found")   return !!plate;
+    if(currentFilter==="inside")  return r.status==="in";
+    return true;
+  });
+
+  const grid=document.getElementById("recordGrid");
+  if(!filtered.length){
+    grid.innerHTML=`<div class="empty-state"><div class="icon">✅</div><p>${currentFilter==="missing"?"All plates found!":"No records match this filter."}</p></div>`;
+    return;
+  }
+
+  grid.innerHTML=filtered.map(([id,r])=>{
+    const plate=r.plate||localPlates[id]||"";
+    const source=r.plate?"stored":localPlates[id]?"scanned":"";
+    const hasPlate=!!plate;
+    return `<div class="card ${hasPlate?"has-plate":"no-plate"}" id="card-${id}">
+      <div class="card-photos">
+        <img src="${r.carImg||""}" alt="Vehicle" onclick="openLightbox('${r.carImg||""}')">
+        <img src="${r.driverImg||""}" alt="Driver" onclick="openLightbox('${r.driverImg||""}')">
+      </div>
+      <div class="card-body">
+        <div class="card-plate ${hasPlate?"":"pending"}" id="plate-display-${id}">
+          ${hasPlate
+            ? `${plate} <span class="plate-badge ${r.plate?"stored":"scanned"}">${r.plate?"Stored":"Scanned"}</span>`
+            : "Not yet scanned"}
+        </div>
+        <div class="card-meta">
+          <span>⏰ ${r.timeIn||"—"}</span>
+          <span>🚪 ${r.gate||"—"}</span>
+          <span>${r.status==="in"?"● Inside":"✓ Exited"}</span>
+        </div>
+        <div class="card-actions">
+          <input type="text" class="plate-input" id="plate-input-${id}"
+            value="${plate}" placeholder="e.g. KP82BWGP"
+            oninput="this.value=this.value.toUpperCase()"
+            onkeydown="if(event.key==='Enter')saveSingle('${id}')">
+          <button class="scan-btn" id="scan-btn-${id}" onclick="scanSingle('${id}')">
+            ${r.plate?"↺ Re-scan":"🔍 Scan"}
+          </button>
+          <button class="save-btn" onclick="saveSingle('${id}')">Save</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  updateStats();
+}
+
+// ── SCAN SINGLE ───────────────────────────────────────────────────────────────
+async function scanSingle(id){
+  const r=records[id]; if(!r?.carImg) return;
+  const btn=document.getElementById("scan-btn-"+id);
+  const display=document.getElementById("plate-display-"+id);
+  btn.disabled=true;
+  btn.innerHTML=`<div class="spinner"></div>`;
+  display.className="card-plate pending";
+  display.textContent="Scanning…";
+
+  try{
+    const toB64=d=>d.split(",")[1];
+    const mime =d=>d.split(";")[0].split(":")[1];
+    const pr=await fetch(PROXY_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","X-GMC-Token":PROXY_TOKEN},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:60,messages:[{
+        role:"user",content:[
+          {type:"image",source:{type:"base64",media_type:mime(r.carImg),data:toB64(r.carImg)}},
+          {type:"text",text:`Look carefully at this vehicle photo. Read the license plate number if it is visible anywhere in the image. South African plates are in format "AB 12 CD GP". Reply ONLY valid JSON: {"plate":"KP 82 BW GP"} or {"plate":null} if truly not visible.`}
+        ]
+      }]})
+    });
+    if(!pr.ok){const e=await pr.json().catch(()=>({}));throw new Error(e?.error?.message||"HTTP "+pr.status);}
+    const pd=await pr.json();
+    const pt=(pd.content||[]).map(c=>c.text||"").join("").replace(/```json|```/g,"").trim();
+    const plate=JSON.parse(pt)?.plate||null;
+
+    if(plate){
+      localPlates[id]=plate;
+      document.getElementById("plate-input-"+id).value=plate;
+      display.className="card-plate";
+      display.innerHTML=`${plate} <span class="plate-badge scanned">Scanned</span>`;
+      document.getElementById("card-"+id).className="card has-plate";
+      showToast(`✓ ${plate} found.`,"success");
+    } else {
+      display.className="card-plate not-found";
+      display.textContent="Plate not visible in photo";
+      showToast("Plate not readable — enter manually.","warn");
+    }
+  }catch(e){
+    display.className="card-plate not-found";
+    display.textContent="Scan failed";
+    showToast("Scan error: "+e.message,"error");
+  } finally{
+    btn.disabled=false;
+    btn.innerHTML="↺ Re-scan";
+    updateStats();
+  }
+}
+
+// ── SCAN ALL MISSING ──────────────────────────────────────────────────────────
+async function scanAllMissing(){
+  if(scanning){showToast("Already scanning…","warn");return;}
+  const missing=Object.entries(records).filter(([id,r])=>!r.plate&&!localPlates[id]&&r.carImg);
+  if(!missing.length){showToast("No missing plates to scan.","success");return;}
+  scanning=true;
+  const bar=document.getElementById("progressBar");
+  const fill=document.getElementById("progressFill");
+  const status=document.getElementById("progressStatus");
+  const label=document.getElementById("progressLabel");
+  bar.classList.add("visible");
+  label.textContent=`Scanning ${missing.length} vehicle${missing.length!==1?"s":""}…`;
+  document.getElementById("scanAllBtn").disabled=true;
+
+  let done=0, found=0, notFound=0;
+  const toB64=d=>d.split(",")[1];
+  const mime =d=>d.split(";")[0].split(":")[1];
+
+  for(const [id,r] of missing){
+    status.textContent=`Processing ${done+1} of ${missing.length}…`;
+    try{
+      const pr=await fetch(PROXY_URL,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","X-GMC-Token":PROXY_TOKEN},
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:60,messages:[{
+          role:"user",content:[
+            {type:"image",source:{type:"base64",media_type:mime(r.carImg),data:toB64(r.carImg)}},
+            {type:"text",text:`Look carefully at this vehicle photo. Read the license plate number if it is visible anywhere in the image. South African plates are in format "AB 12 CD GP". Reply ONLY valid JSON: {"plate":"KP 82 BW GP"} or {"plate":null} if truly not visible.`}
+          ]
+        }]})
+      });
+      if(!pr.ok) throw new Error("HTTP "+pr.status);
+      const pd=await pr.json();
+      const pt=(pd.content||[]).map(c=>c.text||"").join("").replace(/```json|```/g,"").trim();
+      const plate=JSON.parse(pt)?.plate||null;
+      if(plate){
+        localPlates[id]=plate;
+        document.getElementById("plate-input-"+id)?.setAttribute("value",plate);
+        found++;
+      } else { notFound++; }
+    }catch(e){ notFound++; }
+    done++;
+    fill.style.width=`${Math.round(done/missing.length*100)}%`;
+  }
+
+  bar.classList.remove("visible");
+  scanning=false;
+  document.getElementById("scanAllBtn").disabled=false;
+  renderGrid();
+  showToast(`✓ ${found} plates found, ${notFound} not readable.`,"success");
+}
+
+// ── SAVE SINGLE ───────────────────────────────────────────────────────────────
+async function saveSingle(id){
+  const input=document.getElementById("plate-input-"+id);
+  const plate=input?.value?.trim().toUpperCase()||"";
+  if(!plate){showToast("Please enter or scan a plate first.","warn");return;}
+  try{
+    await update(ref(db,`parking/${TODAY}/${id}`),{plate});
+    localPlates[id]=plate;
+    records[id]={...records[id],plate};
+    const display=document.getElementById("plate-display-"+id);
+    display.className="card-plate";
+    display.innerHTML=`${plate} <span class="plate-badge stored">Stored</span>`;
+    document.getElementById("card-"+id).className="card has-plate";
+    showToast(`✓ ${plate} saved to Firebase.`,"success");
+    updateStats();
+  }catch(e){showToast("Save failed: "+e.message,"error");}
+}
+
+// ── SAVE ALL ──────────────────────────────────────────────────────────────────
+async function saveAllToFirebase(){
+  const toSave=Object.entries(localPlates).filter(([id,p])=>p&&!records[id]?.plate);
+  if(!toSave.length){showToast("Nothing new to save — all already in Firebase.","warn");return;}
+  let saved=0;
+  for(const [id,plate] of toSave){
+    try{
+      await update(ref(db,`parking/${TODAY}/${id}`),{plate});
+      records[id]={...records[id],plate};
+      saved++;
+    }catch(e){}
+  }
+  renderGrid();
+  showToast(`✓ ${saved} plates saved to Firebase.`,"success");
+}
+
+// ── FIND & REMOVE DUPLICATES ─────────────────────────────────────────────────
+function findDuplicatePlates(){
+  const cleanP=p=>p?p.replace(/[\s\-\.]/g,"").toUpperCase():"";
+  const groups={};
+  Object.entries(records).forEach(([id,r])=>{
+    const plate=r.plate||localPlates[id];
+    if(!plate) return;
+    const key=cleanP(plate);
+    if(!groups[key]) groups[key]=[];
+    groups[key].push({id,r,plate});
+  });
+  return Object.values(groups).filter(g=>g.length>1);
+}
+
+async function removeDuplicates(){
+  const dupes=findDuplicatePlates();
+  if(!dupes.length){showToast("No duplicate plates found.","success");return;}
+
+  const summary=dupes.map(group=>{
+    const keep=group.reduce((a,b)=>((a.r.ts||0)>(b.r.ts||0)?a:b));
+    const toRemove=group.filter(x=>x.id!==keep.id);
+    return `${group[0].plate}: keep ${keep.r.timeIn}, remove ${toRemove.map(x=>x.r.timeIn).join(", ")}`;
+  }).join("\n");
+
+  const confirmed=confirm(
+    `Found ${dupes.length} duplicate plate${dupes.length!==1?"s":""}:\n\n${summary}\n\n`+
+    `Most recent check-in for each plate will be kept.\nAll earlier duplicates will be deleted.\n\nProceed?`
+  );
+  if(!confirmed) return;
+
+  let deleted=0;
+  for(const group of dupes){
+    const keep=group.reduce((a,b)=>((a.r.ts||0)>(b.r.ts||0)?a:b));
+    for(const entry of group.filter(x=>x.id!==keep.id)){
+      try{
+        await remove(ref(db,`parking/${TODAY}/${entry.id}`));
+        deleted++;
+      }catch(e){showToast(`Failed to remove ${entry.plate}: ${e.message}`,"error");}
+    }
+  }
+  showToast(`✓ ${deleted} duplicate record${deleted!==1?"s":""} removed.`,"success");
+}
+window.removeDuplicates=removeDuplicates;
+window.findDuplicatePlates=findDuplicatePlates;
+
+async function clearAllData(){
+  const input=prompt("⚠ This will permanently delete ALL today's parking records from all devices.\n\nType CLEAR to confirm:");
+  if(input?.trim().toUpperCase()!=="CLEAR"){showToast("Clear cancelled.","warn");return;}
+  try{
+    await remove(ref(db,`parking/${TODAY}`));
+    showToast("Today's data cleared from all devices.","warn");
+  }catch(e){showToast("Clear failed: "+e.message,"error");}
+}
+window.clearAllData=clearAllData;
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function openLightbox(src){
+  document.getElementById("lightboxImg").src=src;
+  document.getElementById("lightbox").classList.add("open");
+}
+function closeLightbox(){document.getElementById("lightbox").classList.remove("open");}
+
+function showToast(msg,type="success"){
+  const c=document.getElementById("toastContainer");
+  const t=document.createElement("div");t.className="toast "+type;t.textContent=msg;
+  c.appendChild(t);setTimeout(()=>t.remove(),4500);
+}
+</script>
+</body>
+</html>
